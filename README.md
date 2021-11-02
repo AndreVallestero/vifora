@@ -16,7 +16,7 @@ mode 0 (compatible, default, fastest):
 H264 High Profile Level 4.1 8 bit web optimized, aac-lc, mp4
 
 mode 1:
-Av1 (default), opus, webm
+Av1, opus, webm
 
 mode 2 (slowest, best compression):
 Av1 (-b 10 --lag-in-frames=35 --enable-fwd-kf=1 --tune-content=screen --cpu 0), opus, webm

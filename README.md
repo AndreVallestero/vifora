@@ -1,7 +1,7 @@
 # vifora
 Command-line program to create highly compressed videos for easy sharing
 
-Video FOR Ants 
+Video for Ants 
 
 Params:
 - input

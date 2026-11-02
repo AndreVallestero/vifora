@@ -17,3 +17,31 @@ APK: `app/build/outputs/apk/debug/app-debug.apk`
 ./gradlew :app:installDebug       # build + install to connected device
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
+
+## Release build
+
+Release APKs must be signed. Generate a keystore once (keep it backed up, never commit it):
+
+```bash
+keytool -genkeypair -keystore ~/vifora-release.jks -alias vifora \
+  -keyalg RSA -keysize 2048 -validity 9125
+```
+
+Put the credentials in `~/.gradle/gradle.properties` (personal, untracked):
+
+```properties
+VIFORA_STORE_FILE=/home/user/vifora-release.jks
+VIFORA_STORE_PASSWORD=...
+VIFORA_KEY_ALIAS=vifora
+VIFORA_KEY_PASSWORD=...
+```
+
+Then:
+
+```bash
+./gradlew :app:assembleRelease
+```
+
+APK: `app/build/outputs/apk/release/app-release.apk` (signed). Without the
+properties above, the build still succeeds but produces `app-release-unsigned.apk`,
+which cannot be installed.

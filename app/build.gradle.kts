@@ -20,8 +20,29 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            // Provide via ~/.gradle/gradle.properties (NOT the repo one):
+            //   VIFORA_STORE_FILE=/abs/path/vifora-release.jks
+            //   VIFORA_STORE_PASSWORD=...
+            //   VIFORA_KEY_ALIAS=vifora
+            //   VIFORA_KEY_PASSWORD=...
+            val storeFileProp = project.findProperty("VIFORA_STORE_FILE") as String?
+            if (!storeFileProp.isNullOrBlank()) {
+                storeFile = file(storeFileProp)
+                storePassword = project.findProperty("VIFORA_STORE_PASSWORD") as String?
+                keyAlias = project.findProperty("VIFORA_KEY_ALIAS") as String?
+                keyPassword = project.findProperty("VIFORA_KEY_PASSWORD") as String?
+            }
+        }
+    }
     buildTypes {
         release {
+            // Unsigned unless VIFORA_STORE_FILE is set (see signingConfigs above).
+            val storeFileProp = project.findProperty("VIFORA_STORE_FILE") as String?
+            if (!storeFileProp.isNullOrBlank()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

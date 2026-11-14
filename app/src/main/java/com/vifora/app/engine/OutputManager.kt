@@ -6,6 +6,8 @@ data class VideoInfo(
     val hasAudio: Boolean,
     val width: Int = 0,
     val height: Int = 0,
+    /** Probed source framerate, null when unknown (fps cap then stays off). */
+    val sourceFps: Double? = null,
 )
 
 object OutputManager {

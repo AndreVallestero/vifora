@@ -3,6 +3,7 @@ package com.vifora.app.engine
 import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import com.arthenica.ffmpegkit.FFmpegKit
 
 object VideoInspector {
     fun inspect(context: Context, uri: Uri, sourceBytes: Long): VideoInfo {
@@ -32,4 +33,17 @@ object VideoInspector {
             runCatching { mmr.release() }
         }
     }
+
+    /**
+     * Parses the source framerate from `ffmpeg -i` output (MediaMetadataRetriever
+     * has no reliable fps key). Returns null when it cannot be determined.
+     */
+    fun probeSourceFps(inputPath: String): Double? = runCatching {
+        val session = FFmpegKit.execute("-i $inputPath")
+        val out = session.output ?: return null
+        val videoSection = out.substringAfter("Video:", missingDelimiterValue = "")
+        if (videoSection.isEmpty()) return null
+        Regex("""(\d+(?:\.\d+)?)\s+fps""").find(videoSection)?.groupValues
+            ?.getOrNull(1)?.toDoubleOrNull()?.takeIf { it > 0 }
+    }.getOrNull()
 }

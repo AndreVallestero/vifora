@@ -6,7 +6,7 @@ import com.vifora.app.engine.Preset
 /** Settings worth remembering between launches (per-video state is excluded). */
 data class PersistedSettings(
     val preset: Preset = Preset.DISCORD,
-    val targetMb: String = "10",
+    val targetMb: String = "20",
     val fileTemplate: String = "{source}_vifora.{ext}",
     val stillLowMotion: Boolean = false,
     val denoise: Boolean = false,
@@ -14,6 +14,7 @@ data class PersistedSettings(
     val grayscale: Boolean = false,
     val monoAudio: Boolean = false,
     val removeAudio: Boolean = false,
+    val frameRateFps: Int = 30,
 )
 
 class SettingsStore(context: Context) {
@@ -23,7 +24,7 @@ class SettingsStore(context: Context) {
         preset = runCatching {
             Preset.valueOf(prefs.getString(KEY_PRESET, null) ?: "")
         }.getOrDefault(Preset.DISCORD),
-        targetMb = prefs.getString(KEY_TARGET_MB, "10") ?: "10",
+        targetMb = prefs.getString(KEY_TARGET_MB, "20") ?: "20",
         fileTemplate = prefs.getString(KEY_TEMPLATE, "{source}_vifora.{ext}")
             ?: "{source}_vifora.{ext}",
         stillLowMotion = prefs.getBoolean(KEY_STILL, false),
@@ -32,6 +33,7 @@ class SettingsStore(context: Context) {
         grayscale = prefs.getBoolean(KEY_GRAY, false),
         monoAudio = prefs.getBoolean(KEY_MONO, false),
         removeAudio = prefs.getBoolean(KEY_NO_AUDIO, false),
+        frameRateFps = prefs.getInt(KEY_FRAMERATE, 30).coerceIn(1, 120),
     )
 
     fun save(s: PersistedSettings) {
@@ -45,6 +47,7 @@ class SettingsStore(context: Context) {
             .putBoolean(KEY_GRAY, s.grayscale)
             .putBoolean(KEY_MONO, s.monoAudio)
             .putBoolean(KEY_NO_AUDIO, s.removeAudio)
+            .putInt(KEY_FRAMERATE, s.frameRateFps)
             .apply()
     }
 
@@ -58,5 +61,6 @@ class SettingsStore(context: Context) {
         private const val KEY_GRAY = "gray"
         private const val KEY_MONO = "mono"
         private const val KEY_NO_AUDIO = "noAudio"
+        private const val KEY_FRAMERATE = "frameRateFps"
     }
 }

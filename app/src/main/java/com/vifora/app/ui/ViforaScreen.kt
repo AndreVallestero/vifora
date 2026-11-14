@@ -169,6 +169,22 @@ fun ViforaScreen(vm: CompressionViewModel, activity: MainActivity) {
                         modifier = Modifier.padding(start = 8.dp),
                     )
                 }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Framerate cap (fps): ")
+                    var f by remember(s.options.frameRateFps) {
+                        mutableStateOf(s.options.frameRateFps.toString())
+                    }
+                    OutlinedTextField(
+                        value = f,
+                        onValueChange = {
+                            f = it.filter(Char::isDigit).take(3)
+                            f.toIntOrNull()?.let { n ->
+                                vm.setOptions(s.options.copy(frameRateFps = n.coerceIn(1, 120)))
+                            }
+                        },
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
                 CheckRow("Grayscale", s.options.grayscale) {
                     vm.setOptions(s.options.copy(grayscale = it))
                 }
@@ -285,12 +301,14 @@ private fun startCompress(vm: CompressionViewModel, activity: MainActivity) {
                 inputFile.outputStream().use { ins.copyTo(it) }
             }
         }
+        val sourceFps = VideoInspector.probeSourceFps(inputFile.absolutePath)
+        vm.updateSourceFps(sourceFps)
         val passLog = java.io.File(activity.cacheDir, "vifora_pass").absolutePath
         val engine = CompressionEngine()
         val res = engine.execute(
             inputFile.absolutePath,
             outputFile.absolutePath,
-            VideoInfo(info.sourceBytes, info.durationSec, info.hasAudio),
+            VideoInfo(info.sourceBytes, info.durationSec, info.hasAudio, info.width, info.height, sourceFps),
             snapshot.preset,
             snapshot.options,
             targetMb,

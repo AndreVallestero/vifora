@@ -19,7 +19,7 @@ data class ViforaUiState(
     val videoInfo: VideoInfo? = null,
     val preset: Preset = Preset.DISCORD,
     val options: AdvancedOptions = AdvancedOptions(),
-    val targetMb: String = "10",
+    val targetMb: String = "20",
     val outputDirLabel: String = "{source_dir}",
     val fileTemplate: String = "{source}_vifora.{ext}",
     val status: String = "Idle",
@@ -48,6 +48,7 @@ class CompressionViewModel(app: Application) : AndroidViewModel(app) {
                     grayscale = s.grayscale,
                     monoAudio = s.monoAudio,
                     removeAudio = s.removeAudio,
+                    frameRateFps = s.frameRateFps,
                 ),
                 status = "Restored last settings",
             ),
@@ -68,6 +69,7 @@ class CompressionViewModel(app: Application) : AndroidViewModel(app) {
                 grayscale = v.options.grayscale,
                 monoAudio = v.options.monoAudio,
                 removeAudio = v.options.removeAudio,
+                frameRateFps = v.options.frameRateFps,
             ),
         )
     }
@@ -116,6 +118,11 @@ class CompressionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setTrim(t: TrimRange?) {
         _state.value = _state.value.copy(options = _state.value.options.copy(trim = t))
+    }
+
+    fun updateSourceFps(fps: Double?) {
+        val info = _state.value.videoInfo ?: return
+        _state.value = _state.value.copy(videoInfo = info.copy(sourceFps = fps))
     }
 
     fun setStatus(status: String, progress: String = "", working: Boolean = _state.value.isWorking) {

@@ -197,9 +197,9 @@ class CompressionEngine {
         for (v in variants) {
             if (cancelled) return CompressResult.Failure("Cancelled")
             val probeCmd = if (v.twoPass) {
-                FFmpegCommandBuilder.pass1(inputPath, preset, budget.videoBps, options, passLogPrefix, v.pixFmt, caps.av1Encoder, v.useFilter, 5.0)
+                FFmpegCommandBuilder.pass1(inputPath, preset, budget.videoBps, options, passLogPrefix, v.pixFmt, caps.av1Encoder, v.useFilter, 5.0, info.sourceFps)
             } else {
-                FFmpegCommandBuilder.singlePass(inputPath, outputPath, preset, budget.videoBps, budget.audioBps, options, passLogPrefix, v.pixFmt, caps.av1Encoder, v.useFilter, 5.0, true)
+                FFmpegCommandBuilder.singlePass(inputPath, outputPath, preset, budget.videoBps, budget.audioBps, options, passLogPrefix, v.pixFmt, caps.av1Encoder, v.useFilter, 5.0, true, info.sourceFps)
             }
             onProgress(Progress("probing ${if (v.twoPass) "2pass" else "1pass"}-${v.pixFmt}${if (v.useFilter) "" else "-nofilter"}", 1, BitrateCalculator.MAX_ATTEMPTS))
             stats.track("probe", 1, BitrateCalculator.MAX_ATTEMPTS, 5.0)
@@ -234,7 +234,7 @@ class CompressionEngine {
             onProgress(Progress("video-pass", videoAttempts, BitrateCalculator.MAX_ATTEMPTS))
             stats.track("video", videoAttempts, BitrateCalculator.MAX_ATTEMPTS, info.durationSec)
             val (ok1, err1) = runFFmpeg(
-                FFmpegCommandBuilder.pass1(inputPath, preset, budget.videoBps, options, passLogPrefix, pixFmt, caps.av1Encoder, useFilter),
+                FFmpegCommandBuilder.pass1(inputPath, preset, budget.videoBps, options, passLogPrefix, pixFmt, caps.av1Encoder, useFilter, null, info.sourceFps),
                 "pass1",
             )
             if (!ok1) {
@@ -242,7 +242,7 @@ class CompressionEngine {
                 return CompressResult.Failure("Pass 1 failed (attempt $videoAttempts): $err1")
             }
             val (ok2, err2) = runFFmpeg(
-                FFmpegCommandBuilder.pass2(inputPath, outputPath, preset, budget.videoBps, budget.audioBps, options, passLogPrefix, pixFmt, caps.av1Encoder, useFilter),
+                FFmpegCommandBuilder.pass2(inputPath, outputPath, preset, budget.videoBps, budget.audioBps, options, passLogPrefix, pixFmt, caps.av1Encoder, useFilter, info.sourceFps),
                 "pass2",
             )
             stats.clear()
@@ -278,7 +278,7 @@ class CompressionEngine {
             // Re-run pass2 only (logs reused) with smaller audio bitrate.
             stats.track("audio", audioAttempts, BitrateCalculator.MAX_ATTEMPTS, info.durationSec)
             val (ok, err) = runFFmpeg(
-                FFmpegCommandBuilder.pass2(inputPath, outputPath, preset, budget.videoBps, budget.audioBps, options, passLogPrefix, pixFmt, caps.av1Encoder, useFilter),
+                FFmpegCommandBuilder.pass2(inputPath, outputPath, preset, budget.videoBps, budget.audioBps, options, passLogPrefix, pixFmt, caps.av1Encoder, useFilter, info.sourceFps),
                 "audio-retry",
             )
             stats.clear()
@@ -317,7 +317,7 @@ class CompressionEngine {
             onProgress(Progress("single-pass", attempts, BitrateCalculator.MAX_ATTEMPTS))
             stats.track("encode", attempts, BitrateCalculator.MAX_ATTEMPTS, info.durationSec)
             val (ok, err) = runFFmpeg(
-                FFmpegCommandBuilder.singlePass(inputPath, outputPath, preset, bps.videoBps, bps.audioBps, options, passLogPrefix, pixFmt, av1Encoder, useFilter),
+                FFmpegCommandBuilder.singlePass(inputPath, outputPath, preset, bps.videoBps, bps.audioBps, options, passLogPrefix, pixFmt, av1Encoder, useFilter, null, false, info.sourceFps),
                 "single-pass",
             )
             stats.clear()

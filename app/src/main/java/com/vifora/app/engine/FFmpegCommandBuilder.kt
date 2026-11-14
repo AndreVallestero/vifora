@@ -16,6 +16,8 @@ data class AdvancedOptions(
     val grayscale: Boolean = false,
     val monoAudio: Boolean = false,
     val removeAudio: Boolean = false,
+    /** Framerate cap (fps). Never upscales: applied only when source fps exceeds it. */
+    val frameRateFps: Int = 30,
 )
 
 /**
@@ -28,7 +30,7 @@ data class AdvancedOptions(
 object FFmpegCommandBuilder {
     const val PASS_LOG_PREFIX = "vifora_pass"
 
-    fun videoFilter(options: AdvancedOptions): String? {
+    fun videoFilter(options: AdvancedOptions, sourceFps: Double? = null): String? {
         val parts = mutableListOf<String>()
         options.crop?.let { parts += "crop=${it.w}:${it.h}:${it.x}:${it.y}" }
         val p = options.scalePercent.coerceIn(1, 100)
@@ -37,6 +39,10 @@ object FFmpegCommandBuilder {
             parts += if (options.stillLowMotion) "atadenoise" else "hqdn3d"
         }
         if (options.grayscale) parts += "format=gray"
+        // Framerate cap, applied last. Only when the source is actually faster;
+        // never invents frames, and unknown source fps means conservative no-op.
+        val cap = options.frameRateFps.coerceIn(1, 120)
+        if (sourceFps != null && sourceFps > cap) parts += "fps=$cap"
         return parts.takeIf { it.isNotEmpty() }?.joinToString(",")
     }
 
@@ -109,6 +115,7 @@ object FFmpegCommandBuilder {
         av1Encoder: String = "libaom-av1",
         useFilter: Boolean = true,
         probeSeconds: Double? = null,
+        sourceFps: Double? = null,
     ): List<String> {
         val cmd = mutableListOf("-y")
         options.trim?.let {
@@ -116,7 +123,7 @@ object FFmpegCommandBuilder {
         }
         cmd += listOf("-i", inputPath)
         cmd += baseArgs(preset.containerExt, includeFaststart = false)
-        if (useFilter) videoFilter(options)?.let { cmd += listOf("-vf", it) }
+        if (useFilter) videoFilter(options, sourceFps)?.let { cmd += listOf("-vf", it) }
         cmd += videoCodecArgs(preset, videoBps, options.stillLowMotion, pixFmt, av1Encoder)
         cmd += listOf("-pass", "1", "-passlogfile", passLogPrefix)
         if (probeSeconds != null) cmd += listOf("-t", probeSeconds.toString())
@@ -136,6 +143,7 @@ object FFmpegCommandBuilder {
         pixFmt: String = "yuv420p",
         av1Encoder: String = "libaom-av1",
         useFilter: Boolean = true,
+        sourceFps: Double? = null,
     ): List<String> {
         val cmd = mutableListOf("-y")
         options.trim?.let {
@@ -143,7 +151,7 @@ object FFmpegCommandBuilder {
         }
         cmd += listOf("-i", inputPath)
         cmd += baseArgs(preset.containerExt)
-        if (useFilter) videoFilter(options)?.let { cmd += listOf("-vf", it) }
+        if (useFilter) videoFilter(options, sourceFps)?.let { cmd += listOf("-vf", it) }
         cmd += videoCodecArgs(preset, videoBps, options.stillLowMotion, pixFmt, av1Encoder)
         cmd += audioArgs(preset, audioBps, options)
         cmd += listOf("-pass", "2", "-passlogfile", passLogPrefix, outputPath)
@@ -170,6 +178,7 @@ object FFmpegCommandBuilder {
         useFilter: Boolean = true,
         probeSeconds: Double? = null,
         nullOutput: Boolean = false,
+        sourceFps: Double? = null,
     ): List<String> {
         val cmd = mutableListOf("-y")
         options.trim?.let {
@@ -177,7 +186,7 @@ object FFmpegCommandBuilder {
         }
         cmd += listOf("-i", inputPath)
         cmd += baseArgs(preset.containerExt)
-        if (useFilter) videoFilter(options)?.let { cmd += listOf("-vf", it) }
+        if (useFilter) videoFilter(options, sourceFps)?.let { cmd += listOf("-vf", it) }
         cmd += videoCodecArgs(preset, videoBps, options.stillLowMotion, pixFmt, av1Encoder)
         if (probeSeconds != null) cmd += listOf("-t", probeSeconds.toString())
         if (nullOutput) {
